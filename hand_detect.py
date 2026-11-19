@@ -8,7 +8,7 @@ MODEL_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "hand_land
 #build and configure tasks
 class landmarker_and_result():
     def __init__(self):
-        self.result = None #change this when want to display results
+        self.result = None 
         self.landmarker = mp.tasks.vision.HandLandmarker
         self.createLandmarker()
 #create landmarker instance with the live stream mode
@@ -53,7 +53,7 @@ def draw_landmarks_on_image(frame, detection_result):
         (0, 5), (5, 6), (6, 7), (7, 8),
         #middle
         (0, 9), (9, 10), (10, 11), (11,12),
-        #ring finger
+        #ring finger    
         (0, 13), (13, 14), (14, 15), (15, 16),
         #palm(knuckles across)
         (5, 9), (9, 13), (13, 17),
@@ -68,21 +68,21 @@ def draw_landmarks_on_image(frame, detection_result):
         h, w, _ = frame.shape
 
         #draw connections(skeleton)
-        for start_idx, end_idx in HAND_CONNECTIONS:
-            start = hand_landmarks[start_idx]
-            end = hand_landmarks[end_idx]
+        for start_idx, end_idx in HAND_CONNECTIONS: #loops through every connections 0-20
+            start = hand_landmarks[start_idx] # e.g. hand_landmarks[0] -> the wrist landmark
+            end = hand_landmarks[end_idx]  # e.g. hand_landmarks[1] -> the thumb-base landmark
 
-            #landmarks are normalized (0.0 to 1.0), scale to pixel coords
+            #landmarks are normalized (0.0 to 1.0), scale to pixel coords by multiplying with h, w
             start_point = (int(start.x * w), int(start.y * h))
             end_point = (int(end.x * w), int(end.y * h))
             #parameters (image, start, end, color, thickness)
-            cv.line(frame, start_point, end_point, (255, 255, 255), 5)
+            cv.line(frame, start_point, end_point, (255, 255, 255), 5) #coordinates pass into here to draw line connections
 
         #draw dot on each of the 21 landmarks
-        for idx, landmark in enumerate(hand_landmarks):
+        for idx, landmark in enumerate(hand_landmarks): 
             cx, cy = int(landmark.x * w), int(landmark.y * h)
 
-            #fingertips = 4, 8, 12, 16, 20
+            #fingertips is at idx 4, 8, 12, 16, 20
             if idx in [4, 8, 12, 16, 20]:
                 #parameters (image, center point(x, y), thickness, color, thickness(-1 means filled circle))
                 cv.circle(frame, (cx, cy), 8, (0, 255, 0), -1) # green
@@ -94,7 +94,10 @@ def draw_landmarks_on_image(frame, detection_result):
 
 def main():
     #access video
-    cam = cv.VideoCapture(0)
+    cam = cv.VideoCapture(0, cv.CAP_DSHOW)
+
+    cam.set(cv.CAP_PROP_FRAME_WIDTH, 640)
+    cam.set(cv.CAP_PROP_FRAME_HEIGHT, 480)
 
     if not cam.isOpened():
         print("Can't access camera")
@@ -102,14 +105,18 @@ def main():
 
     #intialize capture loop
     hand_landmarker = landmarker_and_result()
+
     #if able to open camera
     while True:
         #read frame by frame
-        success, frame = cam.read()
+        ret, frame = cam.read()
         #if not success, then can't capture
-        if not success:
+        if not ret:
             print("Can't read frame")
             break
+
+        frame = cv.resize(frame, (1280, 960), interpolation = cv.INTER_AREA)
+
         #mirror the displayed video
         frame = cv.flip(frame, 1)
 
@@ -121,6 +128,7 @@ def main():
         cv.imshow('Video', frame)
         #press q to exit
         if cv.waitKey(1) & 0xFF == ord('q'):
+            print("pressed") #debug purpose
             break
     #release frame and destroy all windows
     cam.release()
